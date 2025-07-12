@@ -140,3 +140,92 @@ A Scene:
 ## an example for IO program
 
 <img src=".\IO_example.jpg" alt="IO_example" width="2000" style="float" />
+
+
+## LC-3中的IO:
+
+KBSR的第15位为 ready bit:
+
+当 ready bit 为 0 时: 无效
+
+当 ready bit 为 1 时: 有效
+
+使用BRn指令来判断最高位的 0(zp正) 或 1(n负)
+
+KBDR:前半部分内存不使用，后半部分为ASCII数据:如果检测到 KBSR 中的 ready bit 为 1(有效),则直接读走ASCII的数据.
+
+**(CPU do this!)**
+
+LC-3 中设有四个固定的寄存器":
+
+(设计时就已经约定好了)
+
+KBSR.FILL xFE00 (Keyboard Status Register)
+
+KBDR.FILL xFE02 (Keyboard Data Register)
+
+DSR.FILL xFE04 (Display Status Register)
+
+DDR.FILL xFE06 (Display Data Register)
+
+code example
+
+```LC-3
+LD  R1 , KBSRptr  ;   R1 = xFE00
+LDR R0 , R1 ,#0   ;
+```
+```LC-3
+LDI R0 , KBSRptr  ;  
+```
+
+两部分的代码是等价的
+
+**comment:在I/O中,常使用LDI指令**
+
+Template:
+
+```LC-3
+POLL    LDI  R0 , KBSRptr
+        BRzp POLL        ; 轮询
+; CPU 主动了解外部设备的状态,BRn~1;BRzp~非1
+        LDI  R0 , KBDRptr; 若轮询到了,就载入数据
+
+```
+
+comment:
+
+基于中断,外部设备可以:
+
+(1).强制当前处理器执行的程序停止;
+
+(2).使处理器响应设备的需求;
+
+(3).完成后,处理器恢复停止的程序就像没发生过.
+
+中断时随机的,JSR(子程序)是确定的
+
+```LC-3
+POLL1   LDI   R0,   KBSRptr
+        BRzp    POLL1
+        LDI   R0,   KBDRptr
+POLL2   LDI   R1,   DSRptr
+        BRzp    POLL2
+        STI   R0,   DDRptr
+
+KBSRptr.FILL    xFE00
+KBDRptr.FILL    xFE02
+DSRptr.FILL     xFE04
+DDRptr.FILL     xFE06
+```
+
+第15位:ready bit 1:就绪 0:不就绪
+
+第14位:中断使能位 1:中断使能 0:不使用中断
+
+# Detailed explaination:
+<img src=".\软中断与硬中断.png" alt="软中断与硬中断" width="500" style="float" />
+
+
+<img src=".\中断操作具有随机性.png" alt="中断操作具有随机性" width="2000" style="float" />
+
+<img src=".\ISR.png" alt="ISR" width="2000" style="float" />
